@@ -5,6 +5,9 @@ import torch
 from tqdm import tqdm
 import hydra
 import pytorch_lightning as pl
+import matplotlib.pyplot as plt
+import plotly.graph_objs as go
+from plotly.offline import iplot
 
 from kw_transformer import TransAm
 
@@ -14,6 +17,20 @@ from dataloader import make_volatility_png
 
 import warnings
 warnings.filterwarnings("ignore")
+
+
+def plot_result(gt, result) :
+    plt.figure(figsize = (10, 5))
+    bins = np.arange(0, len(gt))
+    plt.plot(bins, gt, linestyle='-', color='blue', marker='o', label='Ground Truth')
+    plt.plot(bins, result, linestyle='-', color='red', marker = 'x', label='Prediction')
+    plt.title('Volatility prediction')
+    plt.xlabel('Date')
+    plt.ylabel('Value')
+    plt.legend(loc='upper right')
+    plt.grid(True)
+    #plt.show()
+    plt.savefig('./plot_result.png')
 
 @hydra.main(version_base='1.2',config_path="configs", config_name="train.yaml")
 def main(cfg):
@@ -47,9 +64,11 @@ def main(cfg):
         y = y ** (10/3)
         results.append(pred)
         gt.append(y)
-    
-    results = torch.stack(results, dim=0)
-    gt = torch.stack(gt, dim=0)
+
+    results = torch.stack(results, dim=0).squeeze()
+    gt = torch.stack(gt, dim=0).squeeze()
+
+    plot_result(gt, results)
 
     rmse = RMSELoss(results, gt)
     rmspe = RMSPELoss(results, gt)
